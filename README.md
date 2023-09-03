@@ -4,6 +4,7 @@ Get price benchmark data for products, product types and brands. Updates are run
 
 <ol>
   <li>Insert the script in Google Ads</li>
+  <li>Please don't forget to activate API Shopping Content in the "Advanced APIs"</li>
   <li>Copy the spreadsheet</li>
   <li>You must agree to the Market Insights policy before you can compare your prices with others' prices on Google</li>
   <li>Run the script. And set it to weekly.</li>
