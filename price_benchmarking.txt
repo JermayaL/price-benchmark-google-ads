@@ -1,6 +1,6 @@
 ﻿function main() {
     const merchant = 10152XXX;
-    const sheet_url = "https://docs.google.com/spreadsheets/u/4/d/1azVDqtFxt8Z7vspx4VWa5nWp0GWjAWl2IfsEFi3XEsM/copy"
+    const sheet_url = "https://docs.google.com/spreadsheets/d/1azVDqtFxt8Z7vspx4VWa5nWp0GWjAWl2IfsEFi3XEsM/copy"
 
 
     const clicks = get_clicks()
