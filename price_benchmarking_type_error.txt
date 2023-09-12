@@ -1,0 +1,133 @@
+function main() {
+    const merchant = 10152XXX;
+    const sheet_url = "https://docs.google.com/spreadsheets/d/1azVDqtFxt8Z7vspx4VWa5nWp0GWjAWl2IfsEFi3XEsM/copy"
+
+    const clicks = get_clicks()
+    const ss = SpreadsheetApp.openByUrl(sheet_url)
+    let sh = ss.getSheetByName("All Products")
+    const pageSize = 250
+    const statuses = {below: 0, exact: 0, above: 0}
+    const all = []
+    let products = new Map();
+    let brands = new Map();
+    let types = new Map();
+    let rows
+    let pageToken
+    do {
+        const productList = ShoppingContent.Reports.search({
+            query: `SELECT product_view.id,
+                           product_view.title,
+                           product_view.brand,
+                           product_view.offer_id,
+                           product_view.price_micros,
+                           product_view.currency_code,
+                           price_competitiveness.country_code,
+                           price_competitiveness.benchmark_price_micros,
+                           product_view.product_type_l1,
+                           price_competitiveness.benchmark_price_currency_code
+                    FROM PriceCompetitivenessProductView`, pageSize, pageToken
+        }, merchant)
+
+        for (let product of productList.results) {
+            //Logger.log(product)
+            const price = costMicros(product.productView.priceMicros)
+            const cprice = costMicros(product.priceCompetitiveness.benchmarkPriceMicros)
+            const status = price == cprice ? "exact" : price > cprice ? "above" : "below"
+            all.push([product.productView.offerId, product.productView.title, price.toFixed(2), cprice.toFixed(2), clicks[product.productView.offerId] || 0, status])
+
+            const brand = brands.get(product.productView.brand) || {...statuses}
+            brand[status]++
+            brands.set(product.productView.brand, brand)
+
+            const type = types.get(product.productView.productTypeL1) || {...statuses}
+            type[status]++
+            types.set(product.productView.productTypeL1, type)
+
+            products.set(product.productView.offerId, {title: product.productView.title, status})
+
+        }
+
+        pageToken = productList.nextPageToken
+
+    } while (pageToken);
+    let arr = sh.getDataRange().getValues()
+    Logger.log(arr)
+    if (arr.length>1)
+    sh.getRange(2, 1, arr.length - 1, arr[0].length).clearContent()
+    if (all.length > 0)
+        sh.getRange(2, 1, all.length, all[0].length).setValues(all)
+
+    process(2, ss.getSheetByName("Products"), products)
+    process(1, ss.getSheetByName("Brands"), brands)
+    process(1, ss.getSheetByName("ProductType"), types)
+
+
+    //Logger.log([...products.entries()])
+
+}
+
+function get_clicks() {
+    const obj = {}
+    const searchResults = AdsApp.search(`SELECT segments.product_item_id, metrics.clicks
+                                         FROM shopping_performance_view `) //where segments.date DURING LAST_7_DAYS
+    for (let row of searchResults) {
+        //Logger.log(row)
+        if (!row.segments?.productItemId) continue
+        obj[row.segments.productItemId] = row.metrics.clicks
+    }
+
+
+    return obj;
+
+}
+
+function costMicros(cost) {
+    return (parseInt(cost || 0) / 1000000)
+}
+
+function process(start, sheet, items) {
+    const arr = sheet.getDataRange().getValues()
+    const caption = arr.shift()
+    const index = caption.length + 1
+    sheet.getRange(1, index, 1, 1).setValue(`Week ${getWeekNumber()}`)
+    for (let i = 0; i < arr.length; i++) {
+        const info = items.get(arr[i][0].toString())
+        sheet.getRange(i + 2, index, 1, 1).setValue(getText(info))
+        items.delete(arr[i][0].toString())
+    }
+    const result = []
+    for (let key of [...items.keys()]) {
+        const item = items.get(key)
+        let row = [key]
+        if (item.title) row.push(item.title)
+        if (row.length + 1 < index) {
+            row = [...row, ...Array.from({length: index - row.length - 1}, () => "")]
+        }
+        row.push(getText(item))
+        result.push(row)
+    }
+    if (result.length>0)
+    sheet.getRange(arr.length + 2, 1, result.length, result[0].length).setValues(result)
+}
+
+function getText(obj){
+//Logger.log(obj)  
+if (obj?.status) return obj.status  
+obj.below = obj.below||0
+obj.exact = obj.exact||0
+obj.above = obj.above||0
+const total = obj.below + obj.exact + obj.above
+const text = `Below - ${(obj.below*100/total).toFixed(2)}%
+Exact - ${(obj.exact*100/total).toFixed(2)}%
+Above - ${(obj.above*100/total).toFixed(2)}%`
+return text  
+}
+
+function getWeekNumber() {
+  let date=new Date()
+  date = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay() || 7));
+  var yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+  var weekNumber = Math.ceil(((date - yearStart) / 86400000 + 1) / 7);
+  return weekNumber;
+}
