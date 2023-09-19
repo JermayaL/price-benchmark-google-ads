@@ -112,7 +112,8 @@ function process(start, sheet, items) {
 
 function getText(obj){
 //Logger.log(obj)  
-if (obj?.status) return obj.status  
+if (obj?.status) return obj.status 
+obj = !obj?{}:obj
 obj.below = obj.below||0
 obj.exact = obj.exact||0
 obj.above = obj.above||0
