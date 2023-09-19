@@ -10,5 +10,7 @@ Get price benchmark data for products, product types and brands. Updates are run
   <li>Run the script. And set it to weekly.</li>
 </ol>
 
+<ol>
 **PS:**
-If you have get the error: TypeError: Cannot read properties of undefined (reading 'below'), please use the script file: price_benchmarking_type_error.txt
+<li>If you have get the error: TypeError: Cannot read properties of undefined (reading 'below'), please use the script file: price_benchmarking_type_error.txt</li>
+</ol>
